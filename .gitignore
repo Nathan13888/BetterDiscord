@@ -1,0 +1,25 @@
+*.log
+
+emote_data.json
+MLV2_IMAGE_CACHE
+
+plugins/BadgesEverywhere.config.json
+plugins/GoogleTranslateOption.config.json
+plugins/Guild\ And\ Friend\ Removal\ Alerts.config.json
+plugins/InvisibleTyping.config.json
+plugins/ImageUtilities.config.json
+plugins/MessageLoggerV2Data.config.json
+plugins/MessageLoggerV2DataBackup.config.json
+plugins/ShowBadgesInChat.config.json
+bdstorage.json
+Cookies*
+Cache
+GPUCache
+Code Cache
+Local Storage
+Session Storage
+Dictionaries
+Preferences
+Network Persistent State
+data
+
