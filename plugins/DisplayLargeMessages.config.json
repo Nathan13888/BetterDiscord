@@ -1,0 +1,13 @@
+{
+	"amounts": {
+		"maxFileSize": 10
+	},
+	"general": {
+		"onDemand": false,
+		"addOpenButton": true
+	},
+	"settings": {
+		"addOpenButton": true,
+		"onDemand": false
+	}
+}
