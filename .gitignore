@@ -4,6 +4,7 @@ emote_data.json
 MLV2_IMAGE_CACHE
 
 plugins/BadgesEverywhere.config.json
+plugins/FriendNotifications.config.json
 plugins/GoogleTranslateOption.config.json
 plugins/Guild\ And\ Friend\ Removal\ Alerts.config.json
 plugins/InvisibleTyping.config.json
