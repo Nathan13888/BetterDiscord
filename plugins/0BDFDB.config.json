@@ -1,12 +1,13 @@
 {
 	"changeLogs": {
-		"BDFDB": "2.0.6",
+		"BDFDB": "2.1.7",
 		"BetterNsfwTag": "1.2.7",
-		"CompleteTimestamps": "1.6.0",
+		"CompleteTimestamps": "1.6.1",
 		"CreationDate": "1.4.6",
 		"DisplayLargeMessages": "1.0.9",
 		"FriendNotifications": "1.8.1",
-		"ShowHiddenChannels": "3.0.4",
+		"ImageUtilities": "4.6.4",
+		"ShowHiddenChannels": "3.0.6",
 		"StaffTag": "1.4.8",
 		"Translator": "2.3.2"
 	},
@@ -19,7 +20,7 @@
 		"useChromium": false
 	},
 	"hashes": {
-		"0BDFDB.data.json": "a485715019970a30abc55c2a0b8f00bf3240974a",
-		"0BDFDB.raw.css": "a1036e10077b9457f3903795204f7dbd91d7646d"
+		"0BDFDB.data.json": "8f08825d634cb1ebc423392cd4cb4f58805127e6",
+		"0BDFDB.raw.css": "5b4dfd0092eb658a85c3896c5fdab49cf83d0cee"
 	}
 }
