@@ -2,7 +2,7 @@
  * @name SpellCheck
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 1.5.8
+ * @version 1.6.0
  * @description Adds a Spell Check to all Message Inputs. Select a Word and Right Click it to add it to your Dictionary
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -17,20 +17,12 @@ module.exports = (_ => {
 		"info": {
 			"name": "SpellCheck",
 			"author": "DevilBro",
-			"version": "1.5.8",
+			"version": "1.6.0",
 			"description": "Adds a Spell Check to all Message Inputs. Select a Word and Right Click it to add it to your Dictionary"
 		}
 	};
 	
-	return (window.Lightcord && !Node.prototype.isPrototypeOf(window.Lightcord) || window.LightCord && !Node.prototype.isPrototypeOf(window.LightCord) || window.Astra && !Node.prototype.isPrototypeOf(window.Astra)) ? class {
-		getName () {return config.info.name;}
-		getAuthor () {return config.info.author;}
-		getVersion () {return config.info.version;}
-		getDescription () {return "Do not use LightCord!";}
-		load () {BdApi.alert("Attention!", "By using LightCord you are risking your Discord Account, due to using a 3rd Party Client. Switch to an official Discord Client (https://discord.com/) with the proper BD Injection (https://betterdiscord.app/)");}
-		start() {}
-		stop() {}
-	} : !window.BDFDB_Global || (!window.BDFDB_Global.loaded && !window.BDFDB_Global.started) ? class {
+	return !window.BDFDB_Global || (!window.BDFDB_Global.loaded && !window.BDFDB_Global.started) ? class {
 		getName () {return config.info.name;}
 		getAuthor () {return config.info.author;}
 		getVersion () {return config.info.version;}
@@ -92,7 +84,7 @@ module.exports = (_ => {
 			
 				this.patchedModules = {
 					after: {
-						SlateChannelTextArea: ["componentDidMount", "componentDidUpdate"]
+						ChannelEditorContainer: ["componentDidMount", "componentDidUpdate"]
 					}
 				};
 				
@@ -229,14 +221,10 @@ module.exports = (_ => {
 								BDFDB.ContextMenuUtils.createItem(BDFDB.LibraryComponents.MenuItems.MenuItem, {
 									label: this.labels.context_spellcheck,
 									id: BDFDB.ContextMenuUtils.createItemId(this.name, "add-to-spellcheck"),
-									hint: _ => {
-										return BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.MenuItems.MenuHint, {
-											hint: word
-										});
-									},
-									action: _ => {
-										this.addToOwnDictionary(word);
-									}
+									hint: _ => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.MenuItems.MenuHint, {
+										hint: word
+									}),
+									action: _ => this.addToOwnDictionary(word)
 								}),
 								BDFDB.ContextMenuUtils.createItem(BDFDB.LibraryComponents.MenuItems.MenuSeparator, {}),
 								!similarWords.length ? BDFDB.ContextMenuUtils.createItem(BDFDB.LibraryComponents.MenuItems.MenuItem, {
@@ -246,9 +234,7 @@ module.exports = (_ => {
 								}) : similarWords.sort().map(suggestion => BDFDB.ContextMenuUtils.createItem(BDFDB.LibraryComponents.MenuItems.MenuItem, {
 									label: suggestion,
 									id: BDFDB.ContextMenuUtils.createItemId(this.name, "suggestion", suggestion),
-									action: _ => {
-										this.replaceWord(e.instance.props.editor, word, suggestion);
-									}
+									action: _ => this.replaceWord(e.instance.props.editor, word, suggestion)
 								}))
 							].flat(10).filter(n => n)
 						})
@@ -256,8 +242,8 @@ module.exports = (_ => {
 				}
 			}
 
-			processSlateChannelTextArea (e) {
-				let newText = BDFDB.LibraryModules.SlateUtils.serialize(e.instance.props.value);
+			processChannelEditorContainer (e) {
+				let newText = BDFDB.SlateUtils.toTextValue(e.instance.props.richValue);
 				if (newText != currentText) {
 					currentText = newText;
 					BDFDB.DOMUtils.remove(e.node.parentElement.querySelectorAll(BDFDB.dotCN._spellcheckoverlay));
@@ -308,11 +294,10 @@ module.exports = (_ => {
 			}
 
 			replaceWord (editor, toBeReplaced, replacement) {
-				let editorContainer = BDFDB.ReactUtils.findOwner(editor, {name: "ChannelEditorContainer", up: true});
-				if (!editor || !editorContainer || !editorContainer.props || !editorContainer.props.textValue) return;
+				if (!editor) return;
 				toBeReplaced = toBeReplaced.toUpperCase();
 				let newString = [];
-				editorContainer.props.textValue.replace(/\n/g, "\n ").split(" ").forEach(word => {
+				BDFDB.SlateUtils.toTextValue(editor.children).replace(/\n/g, "\n ").split(" ").forEach(word => {
 					let hasNewline = word.endsWith("\n");
 					word = word.replace(/\n/g, "");
 					if (word.toUpperCase() == toBeReplaced) {
@@ -322,7 +307,14 @@ module.exports = (_ => {
 					}
 					else newString.push(word + (hasNewline ? "\n" : ""));
 				});
-				editor.setValue(BDFDB.SlateUtils.copyRichValue(newString.join(" ").replace(/\n /g, "\n"), editor.props.value));
+				editor.history.stack.splice(editor.history.index + 1, 0, {
+					type: "other",
+    				mergeable: false,
+    				createdAt: new Date().getTime(),
+    				value: BDFDB.SlateUtils.toRichValue(newString.join(" ").replace(/\n /g, "\n")),
+					selection: editor.history.stack[editor.history.index].selection
+				});
+				editor.redo();
 			}
 
 			addToOwnDictionary (word) {

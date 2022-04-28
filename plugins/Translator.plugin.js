@@ -2,7 +2,7 @@
  * @name Translator
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 2.3.6
+ * @version 2.3.7
  * @description Allows you to translate Messages and your outgoing Messages within Discord
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -17,7 +17,7 @@ module.exports = (_ => {
 		"info": {
 			"name": "Translator",
 			"author": "DevilBro",
-			"version": "2.3.6",
+			"version": "2.3.7",
 			"description": "Allows you to translate Messages and your outgoing Messages within Discord"
 		}
 	};
@@ -637,18 +637,18 @@ module.exports = (_ => {
 			
 			processChannelTextAreaForm (e) {
 				BDFDB.PatchUtils.patch(this, e.instance, "handleSendMessage", {instead: e2 => {
-					if (this.isTranslationEnabled(e.instance.props.channel.id) && e2.methodArguments[0]) {
+					if (this.isTranslationEnabled(e.instance.props.channel.id) && e2.methodArguments[0].value) {
 						e2.stopOriginalMethodCall();
-						this.translateText(e2.methodArguments[0], messageTypes.SENT, (translation, input, output) => {
-							translation = !translation ? e2.methodArguments[0] : (this.settings.general.sendOriginalMessage ? (translation + "\n\n> *" + e2.methodArguments[0].split("\n").join("*\n> *") + "*") : translation);
-							e2.originalMethod(translation);
+						this.translateText(e2.methodArguments[0].value, messageTypes.SENT, (translation, input, output) => {
+							translation = !translation ? e2.methodArguments[0].value : (this.settings.general.sendOriginalMessage ? (translation + "\n\n> *" + e2.methodArguments[0].value.split("\n").join("*\n> *") + "*") : translation);
+							e2.originalMethod(Object.assign({}, e2.methodArguments[0], {value: translation}));
 						});
 						return Promise.resolve({
 							shouldClear: true,
 							shouldRefocus: true
 						});
 					}
-					else return e2.callOriginalMethodAfterwards();
+					return e2.callOriginalMethodAfterwards();
 				}}, {force: true, noCache: true});
 			}
 
