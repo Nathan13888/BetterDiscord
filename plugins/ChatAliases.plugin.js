@@ -2,7 +2,7 @@
  * @name ChatAliases
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 2.3.8
+ * @version 2.3.9
  * @description Allows you to configure your own Aliases/Commands
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -17,13 +17,8 @@ module.exports = (_ => {
 		"info": {
 			"name": "ChatAliases",
 			"author": "DevilBro",
-			"version": "2.3.8",
+			"version": "2.3.9",
 			"description": "Allows you to configure your own Aliases/Commands"
-		},
-		"changeLog": {
-			"fixed": {
-				"Attachments": "No longer uploads Attachments to every Message Draft of all Channels in a Server"
-			}
 		}
 	};
 
@@ -177,8 +172,8 @@ module.exports = (_ => {
 								}))
 							].flat(10).filter(n => n);
 						},
-						onSelect: (results, index, _, editor) => {
-							editor.insertText(results.aliases[index].file ? results.aliases[index].word : BDFDB.StringUtils.insertNRST(results.aliases[index].replace));
+						onSelect: data => {
+							data.options.insertText(data.results.aliases[data.index].file ? data.results.aliases[data.index].word : BDFDB.StringUtils.insertNRST(data.results.aliases[data.index].replace));
 							return {};
 						}
 					};
@@ -373,35 +368,36 @@ module.exports = (_ => {
 					children: BDFDB.ContextMenuUtils.createItem(BDFDB.LibraryComponents.MenuItems.MenuItem, {
 						label: BDFDB.LanguageUtils.LibraryStringsFormat("add_to", "ChatAliases"),
 						id: BDFDB.ContextMenuUtils.createItemId(this.name, "add-alias"),
-						action: _ => {
-							this.openAddModal(text.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
-						}
+						action: _ => this.openAddModal(text.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"))
 					})
 				}));
 			}
 			
 			processChannelTextAreaForm (e) {
 				BDFDB.PatchUtils.patch(this, e.instance, "handleSendMessage", {before: e2 => {
-					if (this.settings.places.normal) this.handleSubmit(e, e2);
+					if (!this.settings.places.normal || !this.settings.general.replaceBeforeSend || BDFDB.LibraryModules.SlowmodeUtils.getSlowmodeCooldownGuess(e.instance.props.channel.id) > 0) return;
+					let messageData = this.formatText(e2.methodArguments[0].value);
+					if (messageData) {
+						if (messageData.text != null && e2.methodArguments[0].value != messageData.text) {
+							e2.methodArguments[0].value = messageData.text;
+							e.instance.props.textValue = "";
+							if (e.instance.props.richValue) e.instance.props.richValue = BDFDB.SlateUtils.toRichValue("");
+							if (e.instance.state) {
+								e.instance.state.textValue = "";
+								if (e.instance.state.richValue) e.instance.state.richValue = BDFDB.SlateUtils.toRichValue("");
+							}
+							BDFDB.ReactUtils.forceUpdate(e.instance);
+						}
+					}
 				}}, {force: true, noCache: true});
 			}
 			
 			processMessageEditor (e) {
 				BDFDB.PatchUtils.patch(this, e.instance, "onSubmit", {before: e2 => {
-					if (this.settings.places.edit) this.handleSubmit(e, e2);
-				}}, {force: true, noCache: true});
-			}
-			
-			handleSubmit (e, e2) {
-				if (!this.settings.general.replaceBeforeSend || BDFDB.LibraryModules.SlowmodeUtils.getSlowmodeCooldownGuess(e.instance.props.channel.id) > 0) return;
-				let messageData = this.formatText(e2.methodArguments[0].value);
-				if (messageData) {
-					if (messageData.files.length > 0 && (BDFDB.DMUtils.isDMChannel(e.instance.props.channel.id) || BDFDB.UserUtils.can("ATTACH_FILES"))) {
-						e2.methodArguments[0].uploads = [].concat(e2.methodArguments[0].uploads);
-						for (let file of messageData.files) e2.methodArguments[0].uploads.push(new BDFDB.DiscordObjects.Upload({file: file, platform: 1}));
-					}
-					if (messageData.text != null && e2.methodArguments[0].value != messageData.text) {
-						e2.methodArguments[0].value = messageData.text;
+					if (!this.settings.places.edit || !this.settings.general.replaceBeforeSend || BDFDB.LibraryModules.SlowmodeUtils.getSlowmodeCooldownGuess(e.instance.props.channel.id) > 0) return;
+					let messageData = this.formatText(e2.methodArguments[0]);
+					if (messageData && messageData.text != null && e2.methodArguments[0] != messageData.text) {
+						e2.methodArguments[0] = messageData.text;
 						e.instance.props.textValue = "";
 						if (e.instance.props.richValue) e.instance.props.richValue = BDFDB.SlateUtils.toRichValue("");
 						if (e.instance.state) {
@@ -410,7 +406,7 @@ module.exports = (_ => {
 						}
 						BDFDB.ReactUtils.forceUpdate(e.instance);
 					}
-				}
+				}}, {force: true, noCache: true});
 			}
 
 			formatText (text) {

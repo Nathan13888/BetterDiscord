@@ -8,6 +8,7 @@
 		],
 		"categorydata": [],
 		"channels": {
+			"GUILD_CATEGORY": true,
 			"GUILD_TEXT": true,
 			"GUILD_VOICE": true,
 			"GUILD_ANNOUNCEMENT": true,
@@ -15,7 +16,6 @@
 			"GUILD_STAGE_VOICE": true
 		},
 		"general": {
-			"alwaysCollapse": false,
 			"showVoiceUsers": true,
 			"showForNormal": true
 		},

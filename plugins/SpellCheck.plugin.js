@@ -2,7 +2,7 @@
  * @name SpellCheck
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 1.6.0
+ * @version 1.6.4
  * @description Adds a Spell Check to all Message Inputs. Select a Word and Right Click it to add it to your Dictionary
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -17,7 +17,7 @@ module.exports = (_ => {
 		"info": {
 			"name": "SpellCheck",
 			"author": "DevilBro",
-			"version": "1.6.0",
+			"version": "1.6.4",
 			"description": "Adds a Spell Check to all Message Inputs. Select a Word and Right Click it to add it to your Dictionary"
 		}
 	};
@@ -100,7 +100,7 @@ module.exports = (_ => {
 					let dictionaryLanguageIds = Array.from(BDFDB.DOMUtils.create(body).querySelectorAll(`[href*="/mwittrien/BetterDiscordAddons/blob/master/Plugins/SpellCheck/dic/"]`)).map(n => n.innerText.split(".")[0]).filter(n => n);
 					languages = BDFDB.ObjectUtils.filter(BDFDB.LanguageUtils.languages, langId => dictionaryLanguageIds.includes(langId), true);
 					
-					if (BDFDB.LibraryModules.SpellCheckStore && BDFDB.LibraryModules.SpellCheckStore.isEnabled()) BDFDB.LibraryModules.DispatchApiUtils.dispatch({type: BDFDB.DiscordConstants.ActionTypes.SPELLCHECK_TOGGLE});
+					if (BDFDB.LibraryModules.SpellCheckStore && BDFDB.LibraryModules.SpellCheckStore.isEnabled()) BDFDB.LibraryModules.DispatchApiUtils.dispatch({type: "SPELLCHECK_TOGGLE"});
 
 					BDFDB.PatchUtils.forceAllUpdates(this);
 					
@@ -119,7 +119,7 @@ module.exports = (_ => {
 				
 				BDFDB.DOMUtils.remove(BDFDB.dotCN._spellcheckoverlay);
 
-				for (let key in languageToasts) this.killLanguageToast(key);
+				for (let key in languageToasts) languageToasts[key] && languageToasts[key].close();
 			}
 
 			getSettingsPanel (collapseStates = {}) {
@@ -282,36 +282,37 @@ module.exports = (_ => {
 
 			spellCheckText (string) {
 				let htmlString = [];
-				string.replace(/\n/g, "\n ").split(" ").forEach(word => {
-					if (!word) htmlString.push("");
-					else {
-						let hasNewline = word.endsWith("\n");
-						word = word.replace(/\n/g, "");
-						htmlString.push(`<span class="${this.isWordNotInDictionary(word) ? BDFDB.disCN._spellcheckerror : ""}" style="color: transparent !important; text-shadow: none !important;">${BDFDB.StringUtils.htmlEscape(word)}</span>${hasNewline ? "\n" : ""}`);
-					}
+				let splitter = "!?!?!?!?!?!?!?!" + this.name + BDFDB.NumberUtils.generateId() + this.name + "!?!?!?!?!?!?!?!";
+				string.replace(/([0-9\ \@\>\<\|\,\;\.\:\-\_\=\#\+\*\~\[\]\(\)\{\}\\\/\&\^\t\r\n])/g, "$1" + splitter).split(splitter).forEach(word => {
+					let execReturn = /[0-9\ \@\>\<\|\,\;\.\:\-\_\=\#\+\*\~\[\]\(\)\{\}\\\/\&\^\t\r\n]$/g.exec(word);
+					if (execReturn) word = word.slice(0, execReturn[0].length * -1);
+					htmlString.push(`<span class="${this.isWordNotInDictionary(word) ? BDFDB.disCN._spellcheckerror : ""}" style="color: transparent !important; text-shadow: none !important;">${BDFDB.StringUtils.htmlEscape(word)}</span>`);
+					if (execReturn) htmlString.push(`<span>${execReturn[0]}</span>`);
 				});
-				return htmlString.join("<span> </span>").replace(/\n /g, "\n");
+				return htmlString.join("").replace(/\n /g, "\n");
 			}
 
 			replaceWord (editor, toBeReplaced, replacement) {
 				if (!editor) return;
 				toBeReplaced = toBeReplaced.toUpperCase();
 				let newString = [];
-				BDFDB.SlateUtils.toTextValue(editor.children).replace(/\n/g, "\n ").split(" ").forEach(word => {
-					let hasNewline = word.endsWith("\n");
-					word = word.replace(/\n/g, "");
+				let splitter = "!?!?!?!?!?!?!?!" + this.name + BDFDB.NumberUtils.generateId() + this.name + "!?!?!?!?!?!?!?!";
+				BDFDB.SlateUtils.toTextValue(editor.children).replace(/([0-9\ \@\>\<\|\,\;\.\:\-\_\=\#\+\*\~\[\]\(\)\{\}\\\/\&\^\t\r\n])/g, "$1" + splitter).split(splitter).forEach(word => {
+					let execReturn = /[0-9\ \@\>\<\|\,\;\.\:\-\_\=\#\+\*\~\[\]\(\)\{\}\\\/\&\^\t\r\n]$/g.exec(word);
+					if (execReturn) word = word.slice(0, execReturn[0].length * -1);
 					if (word.toUpperCase() == toBeReplaced) {
 						let firstLetter = word.charAt(0);
 						let isCapitalised = firstLetter.toUpperCase() == firstLetter && firstLetter.toLowerCase() != firstLetter;
-						newString.push((isCapitalised ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement) + (hasNewline ? "\n" : ""));
+						newString.push(isCapitalised ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement);
 					}
-					else newString.push(word + (hasNewline ? "\n" : ""));
+					else newString.push(word);
+					if (execReturn) newString.push(execReturn[0]);
 				});
 				editor.history.stack.splice(editor.history.index + 1, 0, {
 					type: "other",
     				mergeable: false,
     				createdAt: new Date().getTime(),
-    				value: BDFDB.SlateUtils.toRichValue(newString.join(" ").replace(/\n /g, "\n")),
+    				value: BDFDB.SlateUtils.toRichValue(newString.join("")),
 					selection: editor.history.stack[editor.history.index].selection
 				});
 				editor.redo();
@@ -334,26 +335,17 @@ module.exports = (_ => {
 			}
 
 			setDictionary (key, lang) {
-				this.killLanguageToast(key);
+				languageToasts[key] && languageToasts[key].close();
 				if (languages[lang]) {
 					let ownDictionary = BDFDB.DataUtils.load(this, "owndics", lang) || [];
-					let loadingString = `${this.labels.toast_dictionary.replace("{{var0}}", this.getLanguageName(languages[lang]))} - ${BDFDB.LanguageUtils.LibraryStrings.please_wait}`;
-					let currentLoadingString = loadingString;
-					languageToasts[key] = BDFDB.NotificationUtils.toast(loadingString, {
-						timeout: 0,
-						position: "center"
-					});
-					languageToasts[key].interval = BDFDB.TimeUtils.interval(_ => {
-						currentLoadingString = currentLoadingString.endsWith(".....") ? loadingString : currentLoadingString + ".";
-						languageToasts[key].update(currentLoadingString);
-					}, 500);
+					languageToasts[key] = BDFDB.NotificationUtils.toast(`${this.labels.toast_dictionary.replace("{{var0}}", this.getLanguageName(languages[lang]))} - ${BDFDB.LanguageUtils.LibraryStrings.please_wait}`, {timeout: 0, ellipsis: true, position: "center"});
 					languageToasts[key].lang = lang
 					
 					const folder = BDFDB.LibraryRequires.path.join(BDFDB.BDUtils.getPluginsFolder(), "dictionaries");
 					const filePath = BDFDB.LibraryRequires.path.join(folder, lang + ".dic");
 					
 					const parse = (error, response, body, download) => {
-						this.killLanguageToast(key);
+						languageToasts[key].close();
 						if (error || (response && body.toLowerCase().indexOf("<!doctype html>") > -1)) {
 							BDFDB.NotificationUtils.toast(this.labels.toast_dictionary_fail.replace("{{var0}}", this.getLanguageName(languages[lang])), {
 								type: "danger",
@@ -398,16 +390,9 @@ module.exports = (_ => {
 				}, {});
 			}
 
-			killLanguageToast (key) {
-				if (languageToasts[key]) {
-					BDFDB.TimeUtils.clear(languageToasts[key].interval);
-					languageToasts[key].close();
-				}
-			}
-
 			isWordNotInDictionary (unformatedWord) {
 				let wordLow = unformatedWord.toLowerCase();
-				let wordWithoutSymbols = wordLow.replace(/[0-9\µ\@\$\£\€\¥\¢\²\³\>\<\|\,\;\.\:\-\_\#\+\*\~\?\¿\\\´\`\}\=\]\)\[\(\{\/\&\%\§\"\!\¡\^\°\n\t\r]/g, "");
+				let wordWithoutSymbols = wordLow.replace(/[0-9\µ\@\$\£\€\¥\¢\²\³\>\<\|\,\;\.\:\-\_\#\+\*\~\?\¿\\\´\`\“\”\‘\’\}\=\]\)\[\(\{\/\&\%\§\"\!\¡\^\°\n\t\r]/g, "");
 				if (wordLow.indexOf("http://") != 0 && wordLow.indexOf("https://") != 0 && wordWithoutSymbols && wordWithoutSymbols.length > wordLow.length/2) {
 					let wordStartingPos = /^.{1}'/.test(wordWithoutSymbols) ? wordWithoutSymbols.split("'")[1] : "";
 					let wordEndingPos = /'.{1}$/.test(wordWithoutSymbols) ? wordWithoutSymbols.split("'").reverse()[1] : "";
