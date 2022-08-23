@@ -10,6 +10,7 @@
 			"ImageUtilities": "4.7.1",
 			"MessageUtilities": "1.9.4",
 			"ShowHiddenChannels": "3.0.6",
+			"SpotifyControls": "1.2.5",
 			"StaffTag": "1.5.4",
 			"Translator": "2.3.9"
 		},
@@ -23,7 +24,7 @@
 			"shareData": true
 		},
 		"hashes": {
-			"0BDFDB.data.json": "b1f84b762600a29099138dc01ac67db770d4c270",
+			"0BDFDB.data.json": "da14be6f6f21097187631d17d0219a8a52eb6e55",
 			"0BDFDB.raw.css": "96fb638350f77c79c3648050d58a0ea7a700ea1b"
 		}
 	}

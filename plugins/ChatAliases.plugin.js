@@ -2,7 +2,7 @@
  * @name ChatAliases
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 2.3.9
+ * @version 2.4.2
  * @description Allows you to configure your own Aliases/Commands
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -17,7 +17,7 @@ module.exports = (_ => {
 		"info": {
 			"name": "ChatAliases",
 			"author": "DevilBro",
-			"version": "2.3.9",
+			"version": "2.4.2",
 			"description": "Allows you to configure your own Aliases/Commands"
 		}
 	};
@@ -71,8 +71,7 @@ module.exports = (_ => {
 						case: 				{value: false,		description: "Handle the Word Value case sensitive"},
 						exact: 				{value: true,		description: "Handle the Word Value as an exact Word and not as part of a Word"},
 						autoc: 				{value: true,		description: "Add this Alias in the Autocomplete Menu (not for RegExp)"},
-						regex: 				{value: false,		description: "Handle the Word Value as a RegExp String"},
-						file: 				{value: false,		description: "Handle the Replacement Value as a File Path"}
+						regex: 				{value: false,		description: "Handle the Word Value as a RegExp String"}
 					},
 					general: {
 						replaceBeforeSend:	{value: true, 		inner: false,		description: "Replace Words with your Aliases before a Message is sent"},
@@ -115,9 +114,11 @@ module.exports = (_ => {
 				
 				if (BDFDB.LibraryModules.AutocompleteOptions && BDFDB.LibraryModules.AutocompleteOptions.AUTOCOMPLETE_PRIORITY) BDFDB.LibraryModules.AutocompleteOptions.AUTOCOMPLETE_PRIORITY.unshift(AUTOCOMPLETE_ALIAS_OPTION);
 				if (BDFDB.LibraryModules.AutocompleteOptions && BDFDB.LibraryModules.AutocompleteOptions.AUTOCOMPLETE_OPTIONS) {
+					let query = "";
 					BDFDB.LibraryModules.AutocompleteOptions.AUTOCOMPLETE_OPTIONS[AUTOCOMPLETE_ALIAS_OPTION] = {
 						autoSelect: true,
-						matches: (channel, guild, query, _, editor) => {
+						matches: (channel, guild, newQuery, _, options) => {
+							query = newQuery;
 							if (query.length >= this.settings.amounts.minAliasLength) for (let word in aliases) {
 								let aliasData = aliases[word];
 								if (!aliasData.regex && aliasData.autoc) {
@@ -133,7 +134,7 @@ module.exports = (_ => {
 							}
 							return false;
 						},
-						queryResults: (channel, guild, query, editor) => {
+						queryResults: (channel, guild, newQuery, options) => {
 							if (query == commandSentinel) return;
 							let matches = [];
 							for (let word in aliases) {
@@ -150,6 +151,7 @@ module.exports = (_ => {
 								}
 							}
 							if (matches.length) return {results: {aliases: matches}};
+							else return {results: {}};
 						},
 						renderResults: data => {
 							return data && data.results && data.results.aliases && [
@@ -157,7 +159,7 @@ module.exports = (_ => {
 									title: [
 										"Aliases: ",
 										BDFDB.ReactUtils.createElement("strong", {
-											children: data.query
+											children: query
 										})
 									]
 								}),
@@ -173,7 +175,11 @@ module.exports = (_ => {
 							].flat(10).filter(n => n);
 						},
 						onSelect: data => {
-							data.options.insertText(data.results.aliases[data.index].file ? data.results.aliases[data.index].word : BDFDB.StringUtils.insertNRST(data.results.aliases[data.index].replace));
+							if (data.results.aliases[data.index].word.indexOf(" ") > -1) {
+								let textValue = BDFDB.ReactUtils.findValue(BDFDB.DOMUtils.getParent(BDFDB.dotCN.textareawrapall, document.activeElement) || document.querySelector(BDFDB.dotCN.textareawrapall), "textValue");
+								if (textValue) data.options.replaceText(textValue.replace(new RegExp(BDFDB.StringUtils.regEscape(data.results.aliases[data.index].word), data.results.aliases[data.index].case ? "gi" : "g"), BDFDB.StringUtils.insertNRST(data.results.aliases[data.index].replace)));
+							}
+							else data.options.insertText(BDFDB.StringUtils.insertNRST(data.results.aliases[data.index].replace));
 							return {};
 						}
 					};
@@ -326,8 +332,7 @@ module.exports = (_ => {
 								[
 									"Regex: Will treat the entered Word Value as a Regular Expression - ",
 									BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Anchor, {href: "https://regexr.com/", children: BDFDB.LanguageUtils.LanguageStrings.HELP + "?"})
-								],
-								"File: If the Replacement Value is a File Path it will try to upload the File located at the File Path"
+								]
 							].map(string => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.FormComponents.FormText, {
 								type: BDFDB.LibraryComponents.FormComponents.FormTextTypes.DESCRIPTION,
 								children: string
@@ -411,21 +416,21 @@ module.exports = (_ => {
 
 			formatText (text) {
 				text = text.replace(/([\n\t\r])/g, " $1 ");
-				let newText = [], files = [], wordAliases = {}, multiAliases = {};
+				let newText = [], wordAliases = {}, multiAliases = {};
 				for (let word in aliases) {
 					if (!aliases[word].regex && word.indexOf(" ") == -1) wordAliases[word] = aliases[word];
 					else multiAliases[word] = aliases[word];
 				}
 				for (let word of text.trim().split(" ")) {
-					newText.push(this.useAliases(word, wordAliases, files, true));
+					newText.push(this.useAliases(word, wordAliases, true));
 				}
 				newText = newText.length == 1 ? newText[0] : newText.join(" ");
 				newText = newText.replace(/ ([\n\t\r]) /g, "$1");
-				newText = this.useAliases(newText, multiAliases, files, false);
-				return {text: newText, files};
+				newText = this.useAliases(newText, multiAliases, false);
+				return {text: newText};
 			}
 
-			useAliases (string, aliases, files, singleWord) {
+			useAliases (string, aliases, singleWord) {
 				for (let word in aliases) {
 					let result = true, replaced = false, tempString1 = string, tempString2 = "";
 					let config = aliases[word];
@@ -435,14 +440,10 @@ module.exports = (_ => {
 						result = new RegExp(regString, `${config.case ? "" : "i"}${config.exact ? "" : "g"}`).exec(tempString1);
 						if (result) {
 							replaced = true;
-							let replacement = config.file ? "" : BDFDB.StringUtils.insertNRST(config.replace);
+							let replacement = BDFDB.StringUtils.insertNRST(config.replace);
 							if (result.length > 1) for (let i = 1; i < result.length; i++) replacement = replacement.replace(new RegExp("\\\\" + i + "|\\$" + i, "g"), result[i]);
 							tempString2 += tempString1.slice(0, result.index + result[0].length).replace(result[0], !config.regex && !config.case ? BDFDB.StringUtils.equalCase(result[0], replacement) : replacement);
 							tempString1 = tempString1.slice(result.index + result[0].length);
-							if (config.file && typeof config.filedata == "string") {
-								let fileData = JSON.parse(config.filedata);
-								files.push(new File([Uint8Array.from(atob(fileData.data), c => c.charCodeAt(0))], fileData.name, {type: fileData.type}));
-							}
 							if (config.regex && regString.indexOf("^") == 0) result = null;
 						}
 						if (!result) tempString2 += tempString1;
@@ -457,7 +458,7 @@ module.exports = (_ => {
 
 			openAddModal (wordValue) {
 				let values = {wordValue, replaceValue: ""};
-				let configs = BDFDB.ObjectUtils.map(BDFDB.ObjectUtils.filter(this.defaults.configs, key => key != "file", true), n => n.value);
+				let configs = BDFDB.ObjectUtils.map(this.defaults.configs, n => n.value);
 				
 				BDFDB.ModalUtils.open(this, {
 					size: "MEDIUM",
@@ -509,13 +510,10 @@ module.exports = (_ => {
 						title: "With:",
 						className: BDFDB.disCN.marginbottom8,
 						children: BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.TextInput, {
-							type: "file",
-							useFilePath: true,
 							value: values.replaceValue,
 							placeholder: values.replaceValue,
 							autoFocus: true,
 							errorMessage: !values.replaceValue && "Choose a Replacement Value",
-							controlsRef: instance => {if (instance) values.fileSelection = BDFDB.ReactUtils.findDOMNode(instance).querySelector("input");},
 							onChange: (value, instance) => {
 								values.replaceValue = value.trim();
 								if (!values.replaceValue) instance.props.errorMessage = "Choose a Replacement Value";
@@ -529,23 +527,13 @@ module.exports = (_ => {
 			}
 
 			saveWord (values, aliasConfigs = this.settings.configs) {
-				if (!values.wordValue || !values.replaceValue || !values.fileSelection) return;
-				let fileData = null;
-				if (values.fileSelection.files && values.fileSelection.files[0] && BDFDB.LibraryRequires.fs.existsSync(values.replaceValue)) {
-					fileData = JSON.stringify({
-						data: BDFDB.LibraryRequires.fs.readFileSync(values.replaceValue).toString("base64"),
-						name: values.fileSelection.files[0].name,
-						type: values.fileSelection.files[0].type
-					});
-				}
+				if (!values.wordValue || !values.replaceValue) return;
 				aliases[values.wordValue] = {
 					replace: values.replaceValue,
-					filedata: fileData,
 					case: aliasConfigs.case,
 					exact: values.wordValue.indexOf(" ") > -1 ? false : aliasConfigs.exact,
 					autoc: aliasConfigs.regex ? false : aliasConfigs.autoc,
-					regex: aliasConfigs.regex,
-					file: fileData != null
+					regex: aliasConfigs.regex
 				};
 				BDFDB.DataUtils.save(aliases, this, "words");
 			}
