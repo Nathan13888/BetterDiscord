@@ -1,6 +1,6 @@
 /**
  * @name MessageLoggerV2
- * @version 1.8.19
+ * @version 1.8.21
  * @invite NYvWdN5
  * @donate https://paypal.me/lighty13
  * @website https://1lighty.github.io/BetterDiscordStuff/?plugin=MessageLoggerV2
@@ -42,7 +42,7 @@ module.exports = class MessageLoggerV2 {
     return 'MessageLoggerV2';
   }
   getVersion() {
-    return '1.8.19';
+    return '1.8.21';
   }
   getAuthor() {
     return 'Lighty';
@@ -185,7 +185,7 @@ module.exports = class MessageLoggerV2 {
       {
         title: 'Fixed',
         type: 'fixed',
-        items: ['Fixed not working and causing crashes.']
+        items: ['Fixed incompatibility with another plugin by Tharki.']
       }
     ];
   }
@@ -518,14 +518,7 @@ module.exports = class MessageLoggerV2 {
       getUserAsync: ZeresPluginLibrary.WebpackModules.getByProps('getUser', 'acceptAgreements').getUser,
       isBlocked: ZeresPluginLibrary.WebpackModules.getByProps('isBlocked').isBlocked,
       createMomentObject: ZeresPluginLibrary.WebpackModules.getByProps('createFromInputFallback'),
-      isMentioned: (e, id) =>
-      (mentionedModule.isMentioned.length === 1 ? mentionedModule.isMentioned({ userId: id, channelId: e.channel_id, mentionEveryone: e.mentionEveryone || e.mention_everyone, mentionUsers: e.mentions.map(e => e.id || e), mentionRoles: e.mentionRoles || e.mention_roles }) : mentionedModule.isMentioned(
-        id,
-        e.channel_id,
-        e.mentionEveryone || e.mention_everyone,
-        e.mentions.map(e => e.id || e),
-        e.mentionRoles || e.mention_roles
-      )),
+      isMentioned: (e, id) => mentionedModule.isMentioned({ userId: id, channelId: e.channel_id, mentionEveryone: e.mentionEveryone || e.mention_everyone, mentionUsers: e.mentions.map(e => e.id || e), mentionRoles: e.mentionRoles || e.mention_roles }),
       DiscordUtils: ZeresPluginLibrary.WebpackModules.getByProps('bindAll', 'debounce')
     };
 
@@ -2577,6 +2570,7 @@ module.exports = class MessageLoggerV2 {
   /* ==================================================-|| END MESSAGE MANAGMENT ||-================================================== */
   onDispatchEvent(args, callDefault) {
     const dispatch = args[0];
+    let ret = Promise.resolve();
 
     if (!dispatch) return callDefault(...args);
 
@@ -2585,14 +2579,14 @@ module.exports = class MessageLoggerV2 {
         clearTimeout(this.selfTestTimeout);
         //console.log('Self test OK');
         this.selfTestFailures = 0;
-        return;
+        return ret;
       }
       // if (dispatch.type == 'EXPERIMENT_TRIGGER') return callDefault(...args);
       // console.log('INFO: onDispatchEvent -> dispatch', dispatch);
       if (dispatch.type === 'CHANNEL_SELECT') {
-        callDefault(...args);
+        ret = callDefault(...args);
         this.selectedChannel = this.getSelectedTextChannel();
-        return;
+        return ret;
       }
 
       if (dispatch.ML2 && dispatch.type === 'MESSAGE_DELETE') return callDefault(...args);
@@ -2803,8 +2797,8 @@ module.exports = class MessageLoggerV2 {
         if (!deleted) return callDefault(...args); // nothing we can do past this point..
 
         if (this.deletedMessageRecord[channel.id] && this.deletedMessageRecord[channel.id].findIndex(m => m === deleted.id) != -1) {
-          if (!this.settings.showDeletedMessages) callDefault(...args);
-          return;
+          if (!this.settings.showDeletedMessages) ret = callDefault(...args);
+          return ret;
         }
 
         if (deleted.type !== 0 && deleted.type !== 19 && (deleted.type !== 20 || (deleted.flags & 64) === 64)) return callDefault(...args);
@@ -2848,7 +2842,7 @@ module.exports = class MessageLoggerV2 {
 
         this.saveDeletedMessage(deleted, this.deletedMessageRecord);
         // if (this.settings.cacheAllImages) this.cacheImages(deleted);
-        if (!this.settings.showDeletedMessages) callDefault(...args);
+        if (!this.settings.showDeletedMessages) ret = callDefault(...args);
         else if (XenoLib.DiscordAPI.channelId === dispatch.channelId) this.dispatcher.dispatch({ type: 'MLV2_FORCE_UPDATE_MESSAGE', id: dispatch.id });
         this.saveData();
       } else if (dispatch.type == 'MESSAGE_DELETE_BULK') {
@@ -2894,7 +2888,7 @@ module.exports = class MessageLoggerV2 {
             }
           }
         }
-        if (!this.settings.showPurgedMessages) callDefault(...args);
+        if (!this.settings.showPurgedMessages) ret = callDefault(...args);
         this.saveData();
       } else if (dispatch.type == 'MESSAGE_UPDATE') {
         if (!dispatch.message.edited_timestamp) {
@@ -3035,11 +3029,12 @@ module.exports = class MessageLoggerV2 {
             }
           }
         }
-        callDefault(...args);
-      } else callDefault(...args);
+        return callDefault(...args);
+      } else return callDefault(...args);
     } catch (err) {
       ZeresPluginLibrary.Logger.stacktrace(this.getName(), 'Error in onDispatchEvent', err);
     }
+    return ret;
   }
   /* ==================================================-|| START MENU ||-================================================== */
   processUserRequestQueue() {
