@@ -7,12 +7,13 @@
 			"CreationDate": "1.4.6",
 			"DisplayLargeMessages": "1.0.9",
 			"FriendNotifications": "1.8.1",
-			"ImageUtilities": "4.7.1",
+			"ImageUtilities": "4.8.6",
 			"MessageUtilities": "1.9.4",
-			"ShowHiddenChannels": "3.0.6",
+			"ShowBadgesInChat": "1.9.2",
+			"ShowHiddenChannels": "9.9.9",
 			"SpotifyControls": "1.2.5",
-			"StaffTag": "1.5.4",
-			"Translator": "2.3.9"
+			"StaffTag": "1.5.6",
+			"Translator": "2.4.1"
 		},
 		"choices": {
 			"toastPosition": "right"
@@ -24,8 +25,8 @@
 			"shareData": true
 		},
 		"hashes": {
-			"0BDFDB.data.json": "fd62336ca7d990df494a48b91dc98adce4f4e93a",
-			"0BDFDB.raw.css": "96fb638350f77c79c3648050d58a0ea7a700ea1b"
+			"0BDFDB.data.json": "f5e84198aed01212fe09995a3ef350752ab42cfd",
+			"0BDFDB.raw.css": "98e9c027ef6e97326ac142859216e2f96c20ac4d"
 		}
 	}
 }
