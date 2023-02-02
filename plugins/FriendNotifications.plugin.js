@@ -2,7 +2,7 @@
  * @name FriendNotifications
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 1.8.3
+ * @version 1.8.8
  * @description Shows a Notification when a Friend or a User, you choose to observe, changes their Status
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -14,9 +14,8 @@
 
 module.exports = (_ => {
 	const changeLog = {
-		added: {
-			"Show Timestamp": "Added option to show the timestamp in the notification",
-			"Screensharing": "Added option to notify you when a user starts screensharing in one of your servers"
+		"added": {
+			"$nick": "New placeholder for friend nicknames"
 		}
 	};
 
@@ -131,7 +130,7 @@ module.exports = (_ => {
 			DESKTOP: {
 				button: 2,
 				value: 2,
-				color: "var(--bdfdb-green)"
+				color: "var(--status-positive)"
 			}
 		};
 		
@@ -171,10 +170,10 @@ module.exports = (_ => {
 									className: BDFDB.disCN._friendnotificationslogtime,
 									children: BDFDB.LibraryComponents.DateInput.format(_this.settings.dates.logDate, log.timestamp)
 								}),
-								BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.AvatarComponents.default, {
+								BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Avatars.Avatar, {
 									className: BDFDB.disCN._friendnotificationslogavatar,
 									src: log.avatar,
-									size: BDFDB.LibraryComponents.AvatarComponents.Sizes.SIZE_40
+									size: BDFDB.LibraryComponents.Avatars.Sizes.SIZE_40
 								}),
 								_this.createStatusDot(log.status, log.mobile, {marginRight: 6}),
 								BDFDB.ReactUtils.createElement("div", {
@@ -189,7 +188,7 @@ module.exports = (_ => {
 							]
 						})
 					]
-				}) : BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.MessagesPopoutComponents.EmptyStateBottom, {
+				}) : BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.MessagesPopoutComponents.EmptyState, {
 					msg: BDFDB.LanguageUtils.LanguageStrings.AUTOCOMPLETE_NO_RESULTS_HEADER,
 					image: BDFDB.DiscordUtils.getTheme() == BDFDB.disCN.themelight ? "/assets/9b0d90147f7fab54f00dd193fe7f85cd.svg" : "/assets/308e587f3a68412f137f7317206e92c2.svg"
 				});
@@ -237,10 +236,10 @@ module.exports = (_ => {
 					}
 				};
 			
-				this.patchedModules = {
-					after: {
-						Guilds: "type"
-					}
+				this.modulePatches = {
+					after: [
+						"GuildsBar"
+					]
 				};
 		
 				this.css = `
@@ -291,8 +290,7 @@ module.exports = (_ => {
 			forceUpdateAll () {
 				defaultSettings = Object.assign(BDFDB.ObjectUtils.map(statuses, status => notificationTypes[status.value ? "TOAST" : "DISABLED"].value), {timelog: true}, BDFDB.DataUtils.load(this, "defaultSettings"));
 				
-				BDFDB.GuildUtils.rerenderAll();
-				BDFDB.PatchUtils.forceAllUpdates(this);
+				BDFDB.DiscordUtils.rerenderAll();
 			}
 
 			getSettingsPanel (collapseStates = {}) {
@@ -344,7 +342,7 @@ module.exports = (_ => {
 							"Right-Click on an Option to toggle",
 							BDFDB.ReactUtils.createElement("span", {
 								className: BDFDB.disCN._friendnotificationstypelabel,
-								style: {backgroundColor: "var(--bdfdb-green)"},
+								style: {backgroundColor: "var(--status-positive)"},
 								children: "Desktop"
 							}),
 							"Notifications for that User"
@@ -369,7 +367,7 @@ module.exports = (_ => {
 							"Right-Click on an Option Header to toggle",
 							BDFDB.ReactUtils.createElement("span", {
 								className: BDFDB.disCN._friendnotificationstypelabel,
-								style: {backgroundColor: "var(--bdfdb-green)"},
+								style: {backgroundColor: "var(--status-positive)"},
 								children: "Desktop"
 							}),
 							"Notifications for all Users"
@@ -392,7 +390,7 @@ module.exports = (_ => {
 							"/",
 							BDFDB.ReactUtils.createElement("span", {
 								className: BDFDB.disCN._friendnotificationstypelabel,
-								style: {backgroundColor: "var(--bdfdb-green)"},
+								style: {backgroundColor: "var(--status-positive)"},
 								children: "Desktop"
 							})
 						]
@@ -422,11 +420,11 @@ module.exports = (_ => {
 							}
 						},
 						renderLabel: cardData => [
-							BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.AvatarComponents.default, {
+							BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Avatars.Avatar, {
 								className: BDFDB.DOMUtils.formatClassName(BDFDB.disCN.listavatar, cardData.disabled && BDFDB.disCN.avatardisabled),
 								src: BDFDB.UserUtils.getAvatar(cardData.id),
 								status: BDFDB.UserUtils.getStatus(cardData.id),
-								size: BDFDB.LibraryComponents.AvatarComponents.Sizes.SIZE_40,
+								size: BDFDB.LibraryComponents.Avatars.Sizes.SIZE_40,
 								onClick: _ => {
 									let observed = this.getObservedData();
 									let data = observed[type][cardData.id] || Object.assign({}, defaultSettings);
@@ -494,7 +492,7 @@ module.exports = (_ => {
 						let settingsItems = [];
 						
 						let observed = this.getObservedData();
-						let friendIds = BDFDB.LibraryModules.RelationshipStore.getFriendIDs();
+						let friendIds = BDFDB.LibraryStores.RelationshipStore.getFriendIDs();
 						
 						settingsItems.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.CollapseContainer, {
 							title: "Settings",
@@ -537,7 +535,7 @@ module.exports = (_ => {
 							collapseStates: collapseStates,
 							children: ["disabled"].concat(Object.keys(defaultSettings)).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsItem, {
 								type: "Switch",
-								label: BDFDB.LibraryModules.StringUtils.upperCaseFirstChar(key),
+								label: BDFDB.StringUtils.upperCaseFirstChar(key),
 								value: !!defaultSettings[key],
 								onChange: value => {
 									defaultSettings[key] = !!statuses[key] ? notificationTypes[value ? "TOAST" : "DISABLED"].value : value;
@@ -546,8 +544,8 @@ module.exports = (_ => {
 							}))
 						}));
 						
-						let friendCards = Object.keys(observed.friends).map(BDFDB.LibraryModules.UserStore.getUser).filter(n => n);
-						let strangerCards = Object.keys(observed.strangers).map(BDFDB.LibraryModules.UserStore.getUser).filter(n => n);
+						let friendCards = Object.keys(observed.friends).map(BDFDB.LibraryStores.UserStore.getUser).filter(n => n);
+						let strangerCards = Object.keys(observed.strangers).map(BDFDB.LibraryStores.UserStore.getUser).filter(n => n);
 						
 						if (friendCards.length) settingsItems.push(createUserList(friendCards.map(user => Object.assign({}, user, observed.friends[user.id], {
 							key: user.id,
@@ -576,7 +574,7 @@ module.exports = (_ => {
 											else if (friendIds.includes(userId)) BDFDB.NotificationUtils.toast("User is already a Friend of yours, please use the 'Friend-List' Area to configure them", {type: "danger"});
 											else if (observed.strangers[userId]) BDFDB.NotificationUtils.toast("User is already being observed as a 'Stranger'", {type: "danger"});
 											else {
-												let user = /.+#[0-9]{4}/.test(userId) ? BDFDB.LibraryModules.UserStore.findByTag(userId.split("#").slice(0, -1).join("#"), userId.split("#").pop()) : BDFDB.LibraryModules.UserStore.getUser(userId);
+												let user = /.+#[0-9]{4}/.test(userId) ? BDFDB.LibraryStores.UserStore.findByTag(userId.split("#").slice(0, -1).join("#"), userId.split("#").pop()) : BDFDB.LibraryStores.UserStore.getUser(userId);
 												if (user) {
 													observed.strangers[user.id || userId] = Object.assign({}, defaultSettings);
 													BDFDB.DataUtils.save(observed, this, "observed");
@@ -603,23 +601,22 @@ module.exports = (_ => {
 							children: [BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex, {
 								className: BDFDB.disCN.marginbottom8,
 								children: BDFDB.ReactUtils.createElement("div", {
-									className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCNS.settingsrowtitle + BDFDB.disCNS.settingsrowtitledefault + BDFDB.disCN.cursordefault,
+									className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCNS.settingsrowtitledefault + BDFDB.disCN.cursordefault,
 									children: [
-										"Allows you to configure your own Message Strings for the different Statuses. ",
-										BDFDB.ReactUtils.createElement("strong", {children: "$user"}),
-										" is the Placeholder for the User Name, ",
-										BDFDB.ReactUtils.createElement("strong", {children: "$status"}),
-										" for the Status Name, ",
-										BDFDB.ReactUtils.createElement("strong", {children: "$statusOld"}),
-										" for the previous Status Name, ",
-										BDFDB.ReactUtils.createElement("strong", {children: "$custom"}),
-										" for the Custom Status, ",
-										BDFDB.ReactUtils.createElement("strong", {children: "$game"}),
-										" for the Game Name, ",
-										BDFDB.ReactUtils.createElement("strong", {children: "$song"}),
-										" for the Song Name and ",
-										BDFDB.ReactUtils.createElement("strong", {children: "$artist"}),
-										" for the Song Artist."
+										"Allows you to configure your own Message Strings for the different Statuses.",
+										[
+											["$user", " is the Placeholder for the Username"],
+											["$nick", " for the Friend Nickname (fallback to $user if unused)"],
+											["$status", " for the Status Name"],
+											["$statusOld", " for the previous Status Name"],
+											["$custom", " for the Custom Status"],
+											["$game", " for the Game Name"],
+											["$song", " for the Song Name"],
+											["$artist", " for the Song Artist"]
+										].map(n => BDFDB.ReactUtils.createElement("div", {children: [
+											BDFDB.ReactUtils.createElement("strong", {children: n[0]}),
+											n[1]
+										]}))
 									]
 								})
 							})].concat(Object.keys(this.defaults.notificationStrings).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsSaveItem, {
@@ -627,7 +624,7 @@ module.exports = (_ => {
 								plugin: this,
 								keys: ["notificationStrings", key],
 								placeholder: this.defaults.notificationStrings[key].value,
-								label: BDFDB.LibraryModules.StringUtils.upperCaseFirstChar(key),
+								label: BDFDB.StringUtils.upperCaseFirstChar(key),
 								basis: "80%",
 								value: this.settings.notificationStrings[key]
 							})))
@@ -646,7 +643,7 @@ module.exports = (_ => {
 									direction: BDFDB.LibraryComponents.Flex.Direction.HORIZONTAL,
 									children: [
 										BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsLabel, {
-											label: `${key.split(/(desktop)|(toast)/).filter(n => n).map(n => BDFDB.LibraryModules.StringUtils.upperCaseFirstChar(n)).join("-")} Notification Sound`,
+											label: `${key.split(/(desktop)|(toast)/).filter(n => n).map(n => BDFDB.StringUtils.upperCaseFirstChar(n)).join("-")} Notification Sound`,
 										}),
 										BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsItem, {
 											type: "Switch",
@@ -692,9 +689,9 @@ module.exports = (_ => {
 													}
 													BDFDB.NotificationUtils.toast("Use a valid direct Link to a Video or Audio Source, they usually end on something like .mp3, .mp4 or .wav", {type: "danger"});
 												});
-												else BDFDB.LibraryRequires.fs.readFile(source, (error, response) => {
+												else BDFDB.LibraryRequires.fs.readFile(source, "", (error, buffer) => {
 													if (error) BDFDB.NotificationUtils.toast("Could not fetch File, please make sure the File exists", {type: "danger"});
-													else successSavedAudio(key, source, `data:audio/mpeg;base64,${response.toString("base64")}`);
+													else successSavedAudio(key, source, `data:audio/mpeg;base64,${Buffer.from(buffer).toString("base64")}`);
 												});
 											},
 											children: BDFDB.LanguageUtils.LanguageStrings.SAVE
@@ -729,7 +726,7 @@ module.exports = (_ => {
 				}
 			}
 			
-			processGuilds (e) {
+			processGuildsBar (e) {
 				if (!this.settings.general.addOnlineCount) return;
 				let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {name: "UnreadDMs"});
 				if (index > -1) children.splice(index, 0, BDFDB.ReactUtils.createElement(FriendOnlineCounterComponent, {
@@ -739,10 +736,10 @@ module.exports = (_ => {
 			
 			getObservedData () {
 				let observed = Object.assign({friends: {}, strangers: {}}, BDFDB.DataUtils.load(this, "observed"));
-				let friendIds = BDFDB.LibraryModules.RelationshipStore.getFriendIDs();
+				let friendIds = BDFDB.LibraryStores.RelationshipStore.getFriendIDs();
 				
 				for (let id of friendIds) {
-					let user = BDFDB.LibraryModules.UserStore.getUser(id);
+					let user = BDFDB.LibraryStores.UserStore.getUser(id);
 					if (user) {
 						observed.friends[id] = Object.assign({}, defaultSettings, observed.friends[id] || observed.strangers[id]);
 						delete observed.strangers[id];
@@ -761,7 +758,7 @@ module.exports = (_ => {
 			}
 
 			getStatusWithMobileAndActivity (id, config, clientStatuses) {
-				let voiceState = BDFDB.LibraryModules.FolderStore.getFlattenedGuildIds().map(BDFDB.LibraryModules.VoiceUtils.getVoiceStates).map(BDFDB.ObjectUtils.toArray).flat(10).find(n => n.selfStream & n.userId == id && BDFDB.LibraryModules.ChannelStore.getChannel(n.channelId) && BDFDB.UserUtils.can("VIEW_CHANNEL", BDFDB.UserUtils.me.id, n.channelId));
+				let voiceState = BDFDB.LibraryModules.SortedGuildUtils.getFlattenedGuildIds().map(BDFDB.LibraryStores.SortedVoiceStateStore.getVoiceStates).map(BDFDB.ObjectUtils.toArray).flat(10).find(n => n.selfStream & n.userId == id && BDFDB.LibraryStores.ChannelStore.getChannel(n.channelId) && BDFDB.UserUtils.can("VIEW_CHANNEL", BDFDB.UserUtils.me.id, n.channelId));
 				let status = {
 					name: BDFDB.UserUtils.getStatus(id),
 					activity: null,
@@ -796,7 +793,7 @@ module.exports = (_ => {
 			}
 			
 			getOnlineCount () {
-				return Object.entries(BDFDB.LibraryModules.RelationshipStore.getRelationships()).filter(n => n[1] == BDFDB.DiscordConstants.RelationshipTypes.FRIEND && BDFDB.LibraryModules.StatusMetaUtils.getStatus(n[0]) != BDFDB.DiscordConstants.StatusTypes.OFFLINE).length;
+				return Object.entries(BDFDB.LibraryStores.RelationshipStore.getRelationships()).filter(n => n[1] == BDFDB.DiscordConstants.RelationshipTypes.FRIEND && BDFDB.LibraryStores.PresenceStore.getStatus(n[0]) != BDFDB.LibraryComponents.StatusComponents.Types.OFFLINE).length;
 			}
 
 			startInterval () {
@@ -806,7 +803,7 @@ module.exports = (_ => {
 				observedUsers = Object.assign({}, data.strangers, data.friends);
 				delete observedUsers[BDFDB.UserUtils.me.id];
 				
-				let clientStatuses = BDFDB.LibraryModules.StatusMetaUtils.getState().clientStatuses;
+				let clientStatuses = BDFDB.LibraryStores.PresenceStore.getState().clientStatuses;
 				for (let id in observedUsers) userStatusStore[id] = this.getStatusWithMobileAndActivity(id, observedUsers[id], clientStatuses);
 				
 				checkInterval = BDFDB.TimeUtils.interval(_ => {
@@ -815,13 +812,13 @@ module.exports = (_ => {
 						friendCounter.props.amount = amount;
 						BDFDB.ReactUtils.forceUpdate(friendCounter);
 					}
-					clientStatuses = BDFDB.LibraryModules.StatusMetaUtils.getState().clientStatuses;
+					clientStatuses = BDFDB.LibraryStores.PresenceStore.getState().clientStatuses;
 					for (let id in observedUsers) if (!observedUsers[id].disabled) {
-						let user = BDFDB.LibraryModules.UserStore.getUser(id);
+						let user = BDFDB.LibraryStores.UserStore.getUser(id);
 						let status = this.getStatusWithMobileAndActivity(id, observedUsers[id], clientStatuses);
 						let transitionChannelId = null;
 						let customChanged = false, loginNotice = false, screensharingNotice = false;
-						if (user && (!observedUsers[id][status.name] && observedUsers[id].login && status.name != BDFDB.DiscordConstants.StatusTypes.OFFLINE && userStatusStore[id].name == BDFDB.DiscordConstants.StatusTypes.OFFLINE && (loginNotice = true) || observedUsers[id][status.name] && (
+						if (user && (!observedUsers[id][status.name] && observedUsers[id].login && status.name != BDFDB.LibraryComponents.StatusComponents.Types.OFFLINE && userStatusStore[id].name == BDFDB.LibraryComponents.StatusComponents.Types.OFFLINE && (loginNotice = true) || observedUsers[id][status.name] && (
 							observedUsers[id].custom && (
 								userStatusStore[id].custom != status.custom && ((customChanged = status.custom) || true) ||
 								(customChanged = status.custom && !this.activityIsSame(id, status))
@@ -833,6 +830,7 @@ module.exports = (_ => {
 						))) {
 							let EUdata = BDFDB.BDUtils.isPluginEnabled("EditUsers") && BDFDB.DataUtils.load("EditUsers", "users", user.id) || {};
 							let name = EUdata.name || user.username;
+							let nickname = EUdata.name || BDFDB.LibraryStores.RelationshipStore.getNickname(user.id);
 							let avatar = EUdata.removeIcon ? "" : (EUdata.url || BDFDB.UserUtils.getAvatar(user.id));
 							let timestamp = new Date().getTime();
 							
@@ -840,8 +838,17 @@ module.exports = (_ => {
 							let oldStatusName = this.getStatusName(id, userStatusStore[id]);
 							
 							let string = this.settings.notificationStrings[screensharingNotice ? "screensharing" : customChanged ? "custom" : loginNotice ? "login" : status.name] || "'$user' changed status to '$status'";
-							let toastString = BDFDB.StringUtils.htmlEscape(string).replace(/'{0,1}\$user'{0,1}/g, `<strong>${BDFDB.StringUtils.htmlEscape(name)}</strong>${this.settings.general.showDiscriminator ? ("#" + user.discriminator) : ""}`).replace(/'{0,1}\$statusOld'{0,1}/g, `<strong>${oldStatusName}</strong>`).replace(/'{0,1}\$status'{0,1}/g, `<strong>${statusName}</strong>`);
-							if (status.activity) toastString = toastString.replace(/'{0,1}\$song'{0,1}|'{0,1}\$game'{0,1}/g, `<strong>${status.activity.name || status.activity.details || ""}</strong>`).replace(/'{0,1}\$artist'{0,1}|'{0,1}\$custom'{0,1}/g, `<strong>${[status.activity.emoji && status.activity.emoji.name, status.activity.state].filter(n => n).join(" ") || ""}</strong>`);
+							let hasUserPlaceholder = string.indexOf("$user") > -1;
+							let toastString = BDFDB.StringUtils.htmlEscape(string)
+								.replace(/'{0,1}\$user'{0,1}/g, `<strong>${BDFDB.StringUtils.htmlEscape(name)}</strong>${this.settings.general.showDiscriminator ? ("#" + user.discriminator) : ""}`)
+								.replace(/'{0,1}\$nick'{0,1}/g, nickname ? `<strong>${BDFDB.StringUtils.htmlEscape(nickname)}</strong>${!hasUserPlaceholder && this.settings.general.showDiscriminator ? ("#" + user.discriminator) : ""}` : !hasUserPlaceholder ? `<strong>${BDFDB.StringUtils.htmlEscape(name)}</strong>${this.settings.general.showDiscriminator ? ("#" + user.discriminator) : ""}` : "")
+								.replace(/'{0,1}\$statusOld'{0,1}/g, `<strong>${oldStatusName}</strong>`)
+								.replace(/'{0,1}\$status'{0,1}/g, `<strong>${statusName}</strong>`);
+							if (status.activity) {
+								toastString = toastString
+									.replace(/'{0,1}\$song'{0,1}|'{0,1}\$game'{0,1}/g, `<strong>${status.activity.name || status.activity.details || ""}</strong>`)
+									.replace(/'{0,1}\$artist'{0,1}|'{0,1}\$custom'{0,1}/g, `<strong>${[status.activity.emoji && status.activity.emoji.name, status.activity.state].filter(n => n).join(" ") || ""}</strong>`);
+							}
 							
 							let statusType = BDFDB.UserUtils.getStatus(user.id);
 							if (observedUsers[id].timelog == undefined || observedUsers[id].timelog) timeLog.unshift({
@@ -854,7 +861,7 @@ module.exports = (_ => {
 								timestamp: timestamp
 							});
 							
-							if (!(this.settings.general.muteOnDND && BDFDB.UserUtils.getStatus() == BDFDB.DiscordConstants.StatusTypes.DND) && (!lastTimes[user.id] || lastTimes[user.id] != timestamp)) {
+							if (!(this.settings.general.muteOnDND && BDFDB.UserUtils.getStatus() == BDFDB.LibraryComponents.StatusComponents.Types.DND) && (!lastTimes[user.id] || lastTimes[user.id] != timestamp)) {
 								lastTimes[user.id] = timestamp;
 								
 								let openChannel = _ => {
@@ -864,9 +871,9 @@ module.exports = (_ => {
 											BDFDB.LibraryModules.WindowUtils.focus();
 										}
 										else {
-											let DMid = BDFDB.LibraryModules.ChannelStore.getDMFromUserId(user.id)
+											let DMid = BDFDB.LibraryStores.ChannelStore.getDMFromUserId(user.id)
 											if (DMid) BDFDB.LibraryModules.ChannelUtils.selectPrivateChannel(DMid);
-											else BDFDB.LibraryModules.DirectMessageUtils.openPrivateChannel(user.id);
+											else BDFDB.LibraryModules.PrivateChannelUtils.openPrivateChannel(user.id);
 											BDFDB.LibraryModules.WindowUtils.focus();
 										}
 									}
@@ -921,12 +928,12 @@ module.exports = (_ => {
 			}
 			
 			createStatusDot (status, isMobile, style = {}) {
-				return BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Status, {
+				return BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.StatusComponents.Status, {
 					style: Object.assign({}, style),
 					size: 12,
 					color: isMobile ? BDFDB.UserUtils.getStatusColor(status, true) : null,
 					isMobile: isMobile,
-					status: isMobile ? BDFDB.DiscordConstants.StatusTypes.ONLINE : status
+					status: isMobile ? BDFDB.LibraryComponents.StatusComponents.Types.ONLINE : status
 				});
 			}
 

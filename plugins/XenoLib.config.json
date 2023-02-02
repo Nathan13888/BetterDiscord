@@ -1,8 +1,4 @@
 {
-    "currentVersionInfo": {
-        "version": "1.4.11",
-        "hasShownChangelog": true
-    },
     "settings": {
         "notifications": {
             "position": "topRight",
@@ -15,8 +11,8 @@
         },
         "userCounter": {
             "enabled": true,
-            "enableTime": 1660516793020,
-            "lastSubmission": 1662987164577
+            "enableTime": 1675300164051,
+            "lastSubmission": 0
         }
     }
 }
